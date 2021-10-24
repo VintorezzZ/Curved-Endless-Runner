@@ -1,61 +1,57 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Incapacitate : MonoBehaviour
 {    
-    private Rigidbody[] ragdollRigidbodies;    
-    private Collider[] ragdollColliders;
+    private Rigidbody[] _ragdollRigidbodies;    
+    private Collider[] _ragdollColliders;
     public Animator animator;
     public CharacterController charBoxCollider;
     public Collider charCupsuleCollider;
-    private void Awake()
+    private void Start()
     {
-        ragdollRigidbodies = GetComponentsInChildren<Rigidbody>();
-        ragdollColliders = GetComponentsInChildren<Collider>();   
+        _ragdollRigidbodies = GetComponentsInChildren<Rigidbody>();
+        _ragdollColliders = GetComponentsInChildren<Collider>();
         SetRagdollCollidersEnabled(false);
         SetRagdollRigibbodiesKinematic(true);
+   
+        EventHub.GameOvered += ActivateRagdoll;
     }
 
-    private void Update()
+    private void SetRagdollCollidersEnabled(bool enabled)
     {
-        ActivateRagdoll();
-    }
-    public void SetRagdollCollidersEnabled(bool enabled)
-    {
-        foreach (Collider i in ragdollColliders)
+        foreach (Collider i in _ragdollColliders)
         {
             i.enabled = enabled;
         }
     }
-    public void SetRagdollRigibbodiesKinematic(bool kinematic)
+
+    private void SetRagdollRigibbodiesKinematic(bool kinematic)
     {
-        foreach (Rigidbody i in ragdollRigidbodies)
+        foreach (Rigidbody i in _ragdollRigidbodies)
         {
             i.isKinematic = kinematic;
         }
     }
 
-    public void ActivateRagdoll()
+    private void ActivateRagdoll()
     {
-        if(PlayerController.gameOver == true)
-        {
-            animator.enabled = false;
-            charBoxCollider.enabled = false;
-            charCupsuleCollider.enabled = false;
+        animator.enabled = false;
+        charBoxCollider.enabled = false;
+        charCupsuleCollider.enabled = false;
+        SetRagdollCollidersEnabled(true); 
+        SetRagdollRigibbodiesKinematic(false);
 
-            SetRagdollCollidersEnabled(true);
-            SetRagdollRigibbodiesKinematic(false);
-
-            Explode();
-        }
+        Explode();
     }
 
     private void Explode()
     {
         //ragdollColliders = Physics.OverlapSphere(transform.position, 50f);
 
-        foreach (var closeObjs in ragdollRigidbodies)
+        foreach (var closeObjs in _ragdollRigidbodies)
         {
             //Rigidbody rigidbody = closeObjs.GetComponent<Rigidbody>();
             closeObjs.AddExplosionForce(1000f, transform.position, 1f);
@@ -65,4 +61,8 @@ public class Incapacitate : MonoBehaviour
         }
     }
 
+    private void OnDisable()
+    {
+        EventHub.GameOvered -= ActivateRagdoll;
+    }
 }

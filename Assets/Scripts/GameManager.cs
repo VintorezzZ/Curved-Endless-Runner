@@ -6,12 +6,13 @@ using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 
-public class GameManager : MonoBehaviour
+public class GameManager : SingletonBehaviour<GameManager>
 {
-    public static GameManager instance;
-
-    //public int coins;
     //private string filePath;
+    public Player player;
+    public bool gameStarted;
+    public bool gamePaused;
+    public bool gameOvered;
 
     protected void OnEnable()
     {
@@ -20,35 +21,94 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
-        if (instance == null)
-            instance = this;
-        else if (instance != this)
-            Destroy(gameObject);
-        DontDestroyOnLoad(gameObject);
+        InitializeSingleton();
+        ClearStates();
 
-        //filePath = Application.persistentDataPath + "/playerInfo.dat";
+        EventHub.GameOvered += OnGameOvered;
+        SceneManager.sceneLoaded += OnGameSceneLoaded;
+    }
 
-        //if (File.Exists(filePath));
-        //    Load();
+    private void ClearStates()
+    {
+        gameStarted = false;
+        gameOvered = false;
+        gamePaused = false;
+    }
+
+    private void OnGameSceneLoaded(Scene arg0, LoadSceneMode arg1)
+    {
+        if (arg0.buildIndex == 1)
+        {
+            player = FindObjectOfType<Player>();
+            player.Init();
+            PrepareGameStart();
+        }    
+    }
+
+    private void PrepareGameStart()
+    {
+        Invoke(nameof(StartRun), 2f);
+        UiManager.Instance.StartGame();
+        ClearStates();
+    }
+
+    private void StartRun()
+    {
+        gameStarted = true;
+        gameOvered = false;
+        gamePaused = false;
+    }
+
+    private void Update()
+    {
+        if(gameOvered)
+            return;
         
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            PauseGame(!gamePaused);
+        }
     }
-    public void StartRun()
+    
+    public void LoadGameScene()
     {
-        ScoreScript.coinsValue = 0;
-        ScoreScript.distanceValue = 0;
-        PlayerController.gameOver = false;
-        SceneManager.LoadScene("Game");
+        SceneManager.LoadSceneAsync("Game", LoadSceneMode.Additive);
     }
 
-    public void EndRun()
+    private void OnGameOvered()
     {
-        SceneManager.LoadScene("Menu");
+        gameOvered = true;
     }
 
-    public void Leaderboard()
+    private void PauseGame(bool isPause)
     {
-        SceneManager.LoadScene("Highscore");
+        EventHub.OnGamePaused(isPause);
+        Time.timeScale = isPause ? 0f : 1f;
     }
+
+    public void ShowMainMenu()
+    {
+        SceneManager.UnloadSceneAsync("Game");
+        UiManager.Instance.ShowMainMenu();
+    }
+
+    public void RestartGame()
+    {
+        StartCoroutine(Restart());
+    }
+    public IEnumerator Restart()
+    {
+        player.playerInfo.coins = 0;
+        player.playerInfo.passedDistance = 0;
+        SceneManager.UnloadSceneAsync("Game");
+        yield return new WaitForSecondsRealtime(1f);
+        SceneManager.LoadSceneAsync("Game", LoadSceneMode.Additive);
+    }
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
+
 
     //public void Save()
     //{

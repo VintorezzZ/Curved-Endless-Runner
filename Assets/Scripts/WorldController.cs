@@ -1,65 +1,50 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class WorldController : MonoBehaviour
+public class WorldController : SingletonBehaviour<WorldController>
 {
-    private static WorldController _instance;
-    public static WorldController Instance
-    {
-        get
-        {
-            if (_instance == null)
-                Debug.Log("WorldController is " + "null");
-            return _instance;
-        }
-    }
-
-    private void Awake()
-    {
-        _instance = this;    
-    }
-
     public delegate void TryToDellAndAddPlatform();
     public event TryToDellAndAddPlatform onPlatformMovement;
 
     public WorldBuilder worldBuilder;
 
     public float currentSpeed = 10f;
-    public static float currSpeed;
     public float maxSpeed = 30f;
     public float speedUp;
 
     public float minZ = -5f;
+
+    private void Awake()
+    {
+        InitializeSingleton();
+    }
+
     void Start()
     {        
-        StartCoroutine(OnPlatformMovementCoroutine());
+        StartCoroutine(PlatformBuildingRoutine());
     }
 
-    // Update is called once per frame
-    void FixedUpdate()
+    private void Update()
     {
-        StartCoroutine(StartGameIn());        
-    }
-
-    void Move()
-    {
-        if (PlayerController.gameOver == false && UIManager.GameIsPaused == false)
-        {
-            transform.Translate((-Vector3.forward) * currentSpeed * Time.fixedDeltaTime);
-            currentSpeed += speedUp * Time.fixedDeltaTime;
-            if (currentSpeed > maxSpeed)
-                currentSpeed = maxSpeed;
-            currSpeed = currentSpeed;
-        }           
+        if (GameManager.Instance.gameOvered || GameManager.Instance.gamePaused) 
+            return;
         
+        if(GameManager.Instance.gameStarted)
+            Move();
     }
-    IEnumerator StartGameIn()
+
+    private void Move()
     {
-        yield return new WaitForSeconds(2f);
-        Move();
+        transform.Translate((-Vector3.forward) * currentSpeed * Time.deltaTime);
+        currentSpeed += speedUp * Time.deltaTime;
+        if (currentSpeed > maxSpeed)
+            currentSpeed = maxSpeed;
+
     }
-    IEnumerator OnPlatformMovementCoroutine()
+  
+    IEnumerator PlatformBuildingRoutine()
     {
         while(true)
         {

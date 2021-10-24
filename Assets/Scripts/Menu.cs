@@ -21,7 +21,7 @@ public class Menu : MonoBehaviour
 
     public void StartRun()
     {
-        GameManager.instance.StartRun();
+        GameManager.Instance.LoadGameScene();
     }
 
     public void EnterYourName()

@@ -3,22 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class HighscoreTable : MonoBehaviour 
+public class HighScoreTable : SingletonBehaviour<HighScoreTable>
 {
-    public static HighscoreTable instance;
-
-    private Transform entryContainer;
-    private Transform entryTemplate;
-    private List<Transform> highscoreEntryTransformList;
+    private Transform _entryContainer;
+    private Transform _entryTemplate;
+    private List<Transform> _highscoreEntryTransformList;
 
     private void Awake() 
     {
-        instance = this;
+        InitializeSingleton();
+        
+        _entryContainer = transform.Find("HighscoreEntryContainer");
+        _entryTemplate = _entryContainer.Find("HighscoreEntryTemplate");
 
-        entryContainer = transform.Find("HighscoreEntryContainer");
-        entryTemplate = entryContainer.Find("HighscoreEntryTemplate");
-
-        entryTemplate.gameObject.SetActive(false);
+        _entryTemplate.gameObject.SetActive(false);
 
         string jsonString = PlayerPrefs.GetString("highscoreTable");
         Highscores highscores = JsonUtility.FromJson<Highscores>(jsonString);
@@ -38,17 +36,17 @@ public class HighscoreTable : MonoBehaviour
             }
         }
 
-        highscoreEntryTransformList = new List<Transform>();
+        _highscoreEntryTransformList = new List<Transform>();
         foreach (HighscoreEntry highscoreEntry in highscores.highscoreEntryList) 
         {
-            CreateHighscoreEntryTransform(highscoreEntry, entryContainer, highscoreEntryTransformList);
+            CreateHighscoreEntryTransform(highscoreEntry, _entryContainer, _highscoreEntryTransformList);
         }
     }
 
     private void CreateHighscoreEntryTransform(HighscoreEntry highscoreEntry, Transform container, List<Transform> transformList) 
     {
         float templateHeight = 31f;
-        Transform entryTransform = Instantiate(entryTemplate, container);
+        Transform entryTransform = Instantiate(_entryTemplate, container);
         RectTransform entryRectTransform = entryTransform.GetComponent<RectTransform>();
         entryRectTransform.anchoredPosition = new Vector2(0, -templateHeight * transformList.Count);
         entryTransform.gameObject.SetActive(true);
